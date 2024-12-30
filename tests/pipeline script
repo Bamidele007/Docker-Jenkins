@@ -1,0 +1,45 @@
+pipeline {
+    agent any
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('DOCKERHUB_CREDENTIALS	') 
+        IMAGE_NAME = 'realzzy/practice:latest'        
+    }
+    stages {
+        stage('Clone Repository') {
+            steps {
+                echo 'Cloning GitHub repository...'
+                git branch: 'main', url: 'https://github.com/Bamidele007/Docker-Jenkins.git'
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                echo 'Building Docker image...'
+                script {
+                    bat "docker build -t ${IMAGE_NAME} ."
+                }
+            }
+        }
+        stage('Login to Docker Hub') {
+    steps {
+        echo 'Logging in to Docker Hub...'
+        withCredentials([usernamePassword(credentialsId: 'DOCKERHUB_CREDENTIALS', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+            bat 'docker login -u %USERNAME% -p %PASSWORD%'
+                }
+            }
+        }
+        stage('Push Docker Image') {
+            steps {
+                echo 'Pushing Docker image to Docker Hub...'
+                script {
+                    bat "docker push ${IMAGE_NAME}"
+                }
+            }
+        }
+    }
+    post {
+        always {
+            echo 'Logging out of Docker Hub...'
+            bat 'docker logout'
+        }
+    }
+}
